@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+    PythonVersion:
+        Type: String
+        AllowedValues:
+            - '3.7'
+            - '3.8'
+            - '3.9'
+
+Globals:
+    Function:
+        Architectures:
+            - x86_64
+        Runtime: !Sub python${PythonVersion}
+        Handler: app.handler
+        MemorySize: 1024
+        Timeout: 120
+
+Resources:
+    MyLambda1Func:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src/lambda1
+            Policies: AWSLambdaExecute
+            Events:
+                CreateThumbnailEvent:
+                    Type: S3
+                    Properties:
+                        Bucket: !Ref SrcBucket
+                        Events: s3:ObjectCreated:*
+
+    MyLambda2Func:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: src/lambda2
+            Policies: AWSLambdaExecute
+            Events:
+                CreateThumbnailEvent:
+                    Type: S3
+                    Properties:
+                        Bucket: !Ref SrcBucket
+                        Events: s3:ObjectCreated:*
+
+    SrcBucket:
+        Type: AWS::S3::Bucket
