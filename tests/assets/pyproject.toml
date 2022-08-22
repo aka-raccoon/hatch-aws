@@ -1,17 +1,21 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling<1.4.0", "hatch-aws"]
 build-backend = "hatchling.build"
 
-
 [project]
-name = "hatch-aws"
-description = 'Hatch plugin for building AWS Lambda functions with SAM'
+name = "my-app"
+version = "1.0.0"
+description = 'The short brief description'
 readme = "README.md"
 requires-python = ">=3.7"
 license = { file = "LICENSE.txt" }
-keywords = ["hatch", "aws", "plugin", "sam", "lambda"]
-authors = [{ name = "aka-raccoon", email = "aka-raccoon@pm.me" }]
-dynamic = ["version"]
+keywords = ["whatever"]
+authors = [{ name = "me", email = "me@dot.me" }]
+dependencies = ["boto3"]
+
+[project.optional-dependencies]
+lambda1 = ["pyaml"]
+lambda2 = ["requrest", "pydantic"]
 
 [tool.hatch.build.targets.aws]
 parameter-overrides = { Runtime = "3.8", Timeout = "120" }

@@ -18,6 +18,7 @@ AWS builder plugin for **[Hatch 🥚🐍](<https://hatch.pypa.io/latest/>)**.
   - [Table of Contents](#table-of-contents)
   - [Global dependency](#global-dependency)
   - [Builder](#builder)
+    - [How to use it](#how-to-use-it)
     - [Options](#options)
   - [License](#license)
 
@@ -49,9 +50,87 @@ To enable it, include following configuration in you config file:
     [build.targets.aws]
     ```
 
+### How to use it
+
+1. Put your module and lambdas inside of `src` folder.
+
+   ```shell
+   .
+   ├── pyproject.toml
+   ├── src
+   │   ├── lambda1
+   │   │   ├── __init__.py
+   │   │   └── app.py
+   │   ├── lambda2
+   │   │   ├── __init__.py
+   │   │   └── app.py
+   │   └── my_app # Code from within this module will be available for lambdas
+   │       ├── __init__.py
+   │       ├── config.py
+   │       └── models.py
+   └── template.yml
+   ```
+
+2. Specify common requirements for your project in `pyproject.toml` as dependencies.
+
+   ```toml
+   [project]
+   dependencies = ["boto3"]
+   ```
+
+3. Specify requirements for your lambda functions in `pyproject.toml` as optional dependencies. Use module (folder) name.
+
+   ```toml
+   [project.optional-dependencies]
+   lambda1 = ["pyaml"]
+   lambda2 = ["requrest", "pydantic"]
+   ```
+
+4. Point the `CodeUri` parameter in a SAM template to a `src/<lambda_name>`.
+
+   ```yaml
+   Resources:
+    Lambda1:
+      Type: AWS::Serverless::Function
+      Properties:
+        FunctionName: lambda1-function
+        CodeUri: src/lambda1
+        Handler: app.lambda_handler
+        ...
+
+    Lambda2:
+      Type: AWS::Serverless::Function
+      Properties:
+        FunctionName: lambda2-function
+        CodeUri: src/lambda2
+        Handler: app.lambda_handler
+        ...
+   ```
+
+5. Run `hatch build` command 🚀.
+
+   ```shell
+   ❯ hatch build
+   [aws]
+   Creating requirement file for Lambda1...
+   Creating requirement file for Lambda2...
+   Building lambda functions with SAM...
+   Build successfull.
+
+   /path/to/.aws/build
+   ```
+
+AWS builder automatically adds the main module (`my_app` in our example) to the lambdas requirements. It enables you to use it as a place for common code.
+
+```python
+# content of src.lambda1.app
+from my_app.config import Settings
+from my_app.models import Batman
+```
+
 ### Options
 
-Following table contains available customization of builder behavior. You can see example of `pyproject.toml` in [tests/assets/pyproject.toml](https://github.com/aka-raccoon/hatch-aws/blob/first_release/tests/assets/pyproject.toml).
+Following table contains available customization of builder behavior. You can find example of `pyproject.toml` in [tests/assets/pyproject.toml](https://github.com/aka-raccoon/hatch-aws/blob/main/tests/assets/pyproject.toml).
 
 | Option                | Type                       | Default        | Description                                            |
 | --------------------- | -------------------------- | -------------- | ------------------------------------------------------ |
