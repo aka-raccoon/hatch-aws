@@ -1,6 +1,5 @@
-import io
 import logging
-from contextlib import contextmanager, redirect_stdout
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Generator, List, Optional, Union
@@ -71,11 +70,9 @@ class Sam:
     @staticmethod
     @contextmanager
     def disable_sam_logging() -> Generator[None, None, None]:
-        logging.getLogger("aws_lambda_builders").setLevel(logging.WARNING)
-        logging.getLogger("samcli").setLevel(logging.WARNING)
+        logging.disable(logging.CRITICAL)
         yield
-        logging.getLogger("aws_lambda_builders").setLevel(logging.INFO)
-        logging.getLogger("samcli").setLevel(logging.INFO)
+        logging.disable(logging.NOTSET)
 
     def _parse_sam_template(self) -> Dict:
         return yaml_parse(self.template_path.read_text(encoding="utf-8"))
@@ -87,9 +84,7 @@ class Sam:
         params.extend(def_params)
 
         with self.disable_sam_logging():
-            trap = io.StringIO()
-            with redirect_stdout(trap):
-                return CliRunner().invoke(cli, params, catch_exceptions=False)
+            return CliRunner().invoke(cli, params, catch_exceptions=False)
 
     def _get_global_code_uri(self) -> Union[Dict, str, None]:
         try:

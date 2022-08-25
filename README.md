@@ -58,16 +58,19 @@ To enable it, include following configuration in you config file:
    .
    ├── pyproject.toml
    ├── src
-   │   ├── lambda1
-   │   │   ├── __init__.py
-   │   │   └── app.py
-   │   ├── lambda2
-   │   │   ├── __init__.py
-   │   │   └── app.py
-   │   └── my_app # Code from within this module will be available for lambdas
-   │       ├── __init__.py
-   │       ├── config.py
-   │       └── models.py
+   │   └── my_app
+   │       ├── __init__.py
+   │       ├── common
+   │       │   ├── __init__.py
+   │       │   ├── config.py
+   │       │   └── models.py
+   │       └── lambdas
+   │           ├── lambda1
+   │           │   ├── __init__.py
+   │           │   └── main.py
+   │           └── lambda2
+   │               ├── __init__.py
+   │               └── main.py
    └── template.yml
    ```
 
@@ -86,7 +89,14 @@ To enable it, include following configuration in you config file:
    lambda2 = ["requrest", "pydantic"]
    ```
 
-4. Point the `CodeUri` parameter in a SAM template to a `src/<lambda_name>`.
+4. Specify additional folders and files you want to copy to the build folder.
+
+   ```toml
+   [tool.hatch.build.targets.aws]
+   include = ["src/my_app/common"]
+   ```
+
+5. Set the `CodeUri` and `Handler` parameter pointing to your lambdas in SAM template.
 
    ```yaml
    Resources:
@@ -94,49 +104,40 @@ To enable it, include following configuration in you config file:
       Type: AWS::Serverless::Function
       Properties:
         FunctionName: lambda1-function
-        CodeUri: src/lambda1
-        Handler: app.lambda_handler
+        CodeUri: src
+        Handler: my_app.lambdas.lambda1.main.app
         ...
 
     Lambda2:
       Type: AWS::Serverless::Function
       Properties:
         FunctionName: lambda2-function
-        CodeUri: src/lambda2
-        Handler: app.lambda_handler
+        CodeUri: src
+        Handler: my_app.lambdas.lambda2.main.app
         ...
    ```
 
-5. Run `hatch build` command 🚀.
+6. Run `hatch build` command.
 
    ```shell
    ❯ hatch build
    [aws]
-   Creating requirement file for Lambda1...
-   Creating requirement file for Lambda2...
-   Building lambda functions with SAM...
-   Build successfull.
-
-   /path/to/.aws/build
+   Building lambda functions ...
+   Lambda1 ... success
+   Lambda2 ... success
+   Build successfull 🚀
+   /path/to/projects/.aws-sam/build
    ```
-
-AWS builder automatically adds the main module (`my_app` in our example) to the lambdas requirements. It enables you to use it as a place for common code.
-
-```python
-# content of src.lambda1.app
-from my_app.config import Settings
-from my_app.models import Batman
-```
 
 ### Options
 
 Following table contains available customization of builder behavior. You can find example of `pyproject.toml` in [tests/assets/pyproject.toml](https://github.com/aka-raccoon/hatch-aws/blob/main/tests/assets/pyproject.toml).
 
-| Option                | Type                       | Default        | Description                                            |
-| --------------------- | -------------------------- | -------------- | ------------------------------------------------------ |
-| `template-name`       | `str`                      | `template.yml` | The filename of a SAM template.                        |
-| `use-container`       | `bool`                     | `false`        | Make build inside an AWS Lambda-like Docker container. |
-| `parameter-overrides` | `array` of `inline tables` |                | Override SAM template parameter                        |
+| Option       | Type    | Default        | Description                                             |
+| ------------ | ------- | -------------- | ------------------------------------------------------- |
+| `template`   | `str`   | `template.yml` | The filename of a SAM template.                         |
+| `use-sam`    | `bool`  | `false`        | Use only SAM for build. Do not run custom copy actions. |
+| `sam-params` | `array` |                | Pass additional options to a SAM build command          |
 
 ## License
 

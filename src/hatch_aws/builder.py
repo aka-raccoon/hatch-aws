@@ -55,20 +55,19 @@ class AwsBuilderConfig(BuilderConfig):
 
     @property
     def use_sam(self) -> bool:
-        self.__use_sam = self.target_config.get("use_sam", self.__use_sam)
+        self.__use_sam = self.target_config.get("use-sam", self.__use_sam)
         if not isinstance(self.__use_sam, bool):
             raise TypeError(
-                f"Field `tool.hatch.build.targets.{self.plugin_name}.sam_params` "
-                "must be an array."
+                f"Field `tool.hatch.build.targets.{self.plugin_name}.use-sam` " "must be a boolean."
             )
         return self.__use_sam
 
     @property
     def sam_params(self) -> Optional[List[str]]:
-        self.__sam_params = self.target_config.get("sam_params")
+        self.__sam_params = self.target_config.get("sam-params")
         if self.__sam_params is not None and not isinstance(self.__sam_params, list):
             raise TypeError(
-                f"Field `tool.hatch.build.targets.{self.plugin_name}.sam_params` "
+                f"Field `tool.hatch.build.targets.{self.plugin_name}.sam-params` "
                 "must be an array."
             )
         return self.__sam_params
