@@ -6,8 +6,6 @@ from unittest.mock import Mock, patch
 import pytest
 from click.testing import CliRunner
 
-from hatch_aws.aws import AwsLambda
-
 
 @patch.object(CliRunner, "invoke", Mock(return_value=Mock(exit_code=1)))
 def test_build_fails_on_rc_1(hatch):
@@ -21,7 +19,7 @@ def test_build_with_real_sam(hatch):
 
     major, minor, _patch = python_version_tuple()
     assert major == "3"
-    build_conf = {"sam_params": ["--parameter-overrides", f"PythonVersion={major}.{minor}"]}
+    build_conf = {"sam-params": ["--parameter-overrides", f"PythonVersion={major}.{minor}"]}
     builder = hatch(build_conf=build_conf)
     builder.build_standard(directory=builder.config.directory)
 
