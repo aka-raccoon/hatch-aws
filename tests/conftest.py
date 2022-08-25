@@ -7,6 +7,7 @@ from typing import Any, Callable, Dict, Generator, List, Optional
 import pytest
 import tomli_w
 
+from hatch_aws.aws import AwsLambda
 from hatch_aws.builder import AwsBuilder
 
 
@@ -24,6 +25,13 @@ def asset() -> Callable:
     return _locate_asset
 
 
+def make_files(root: Path, files: List[str]) -> None:
+    for file in files:
+        path = root / file
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.touch()
+
+
 @pytest.fixture
 def hatch(temp_dir, asset) -> Callable:
     default_config: Dict[str, Any] = {
@@ -39,8 +47,8 @@ def hatch(temp_dir, asset) -> Callable:
         dependencies: Optional[List] = None,
         optional_dependencies: Optional[Dict] = None,
         template: str = "sam-template.yml",
-        use_container: bool = False,
-        parameter_overrides: Optional[List] = None,
+        build_conf: Optional[Dict] = None,
+        files: Optional[List[str]] = None,
     ):
         if not config:
             config = default_config
@@ -49,38 +57,54 @@ def hatch(temp_dir, asset) -> Callable:
         if optional_dependencies:
             config["project"]["optional-dependencies"] = optional_dependencies
 
-        build_conf = config["tool"]["hatch"]["build"]["targets"]["aws"]
-
-        if use_container:
-            build_conf["use-container"] = use_container
-
-        if parameter_overrides:
-            build_conf["parameter-overrides"] = parameter_overrides
+        if build_conf:
+            config["tool"]["hatch"]["build"]["targets"]["aws"] = build_conf
 
         builder = AwsBuilder(str(temp_dir), config=config)
 
         copy(src=asset(template), dst=temp_dir / "template.yml")
 
-        test_folder = temp_dir / "tests" / "test_app.py"
-        test_folder.parent.mkdir(parents=True, exist_ok=True)
-        test_folder.touch()
-        scripts_folder = temp_dir / "scripts" / "something.sh"
-        scripts_folder.parent.mkdir(parents=True, exist_ok=True)
-        scripts_folder.touch()
-
         pyproject = temp_dir / "pyproject.toml"
         with open(pyproject, mode="wb") as file:
             tomli_w.dump(config, file)
-        src_root = temp_dir / "src" / "my_app" / "__init__.py"
-        src_root.parent.mkdir(parents=True, exist_ok=True)
-        src_root.touch()
 
-        lambda1_app = temp_dir / "src" / "lambda1" / "__init__.py"
-        lambda1_app.parent.mkdir(parents=True, exist_ok=True)
-        lambda1_app.touch()
-        lambda2_app = temp_dir / "src" / "lambda2" / "__init__.py"
-        lambda2_app.parent.mkdir(parents=True, exist_ok=True)
-        lambda2_app.touch()
+        if not files:
+            files = [
+                "tests/test_app.py",
+                "scripts/something.sh",
+                "src/my_app/lambdas/lambda1/main.py",
+                "src/my_app/lambdas/lambda1/db.py",
+                "src/my_app/lambdas/lambda2/main.py",
+                "src/my_app/common/config.py",
+                "src/my_app/common/models.py",
+                "src/my_app/utils/storage.py",
+                "src/my_app/utils/logger.py",
+            ]
+
+        make_files(root=temp_dir, files=files)
+
         return builder
 
     return _make_project
+
+
+@pytest.fixture
+def aws_lambda() -> AwsLambda:
+    return AwsLambda(
+        default_code_uri=None,
+        default_handler=None,
+        resource={
+            "Properties": {
+                "CodeUri": "src",
+                "Handler": "my_app.lambdas.lambda1.main.app",
+                "Policies": "AWSLambdaExecute",
+                "Events": {
+                    "CreateThumbnailEvent": {
+                        "Type": "S3",
+                        "Properties": {"Bucket": "SrcBucket", "Events": "s3:ObjectCreated:*"},
+                    }
+                },
+            }
+        },
+        name="MyLambdaFunc",
+    )
