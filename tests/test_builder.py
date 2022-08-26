@@ -11,64 +11,7 @@ from click.testing import CliRunner
 def test_build_fails_on_rc_1(hatch):
     builder = hatch()
     with pytest.raises(SystemExit):
-        builder.build_standard(os.getcwd())
-
-
-@patch.object(CliRunner, "invoke", Mock(return_value=Mock(exit_code=0)))
-def test_build_with_no_dependencies(hatch):
-    builder = hatch()
-    project_root = Path(builder.root)
-    requiremens_file = project_root / "src" / "lambda1" / "requirements.txt"
-    builder.build_standard(os.getcwd())
-    requirements = requiremens_file.read_text()
-
-    assert requiremens_file.is_file()
-    assert str(project_root) in requirements
-
-
-@patch.object(CliRunner, "invoke", Mock(return_value=Mock(exit_code=0)))
-def test_build_with_dependencies(hatch):
-    dependencies = [
-        "package1==5.10.1",
-        "package2==22.6.0",
-        "package3==2.14.5",
-    ]
-    builder = hatch(dependencies=dependencies)
-
-    project_root = Path(builder.root)
-    requiremens_file = project_root / "src" / "lambda1" / "requirements.txt"
-    builder.build_standard(os.getcwd())
-    requirements = requiremens_file.read_text()
-
-    dependencies.append(builder.root)
-    assert sorted(dependencies) == requirements.splitlines()
-
-
-@patch.object(CliRunner, "invoke", Mock(return_value=Mock(exit_code=0)))
-def test_build_with_optional_dependencies(hatch):
-    dependencies = [
-        "package1==5.10.1",
-        "package2==22.6.0",
-        "package3==2.14.5",
-    ]
-    optional_dependencies = {
-        "lambda1": ["lambda1-specific", "another-lambda1-specific"],
-        "lambda2": ["lambda2-specific", "another-lambda2-specific"],
-    }
-    builder = hatch(dependencies=dependencies, optional_dependencies=optional_dependencies)
-
-    project_root = Path(builder.root)
-    lamba1_requiremens_file = project_root / "src" / "lambda1" / "requirements.txt"
-    lamba2_requiremens_file = project_root / "src" / "lambda2" / "requirements.txt"
-    builder.build_standard(os.getcwd())
-    lambda1_requirements = lamba1_requiremens_file.read_text()
-    lambda2_requirements = lamba2_requiremens_file.read_text()
-
-    lambda1_dependences = sorted([*dependencies, *optional_dependencies["lambda1"], builder.root])
-    lambda2_dependences = sorted([*dependencies, *optional_dependencies["lambda2"], builder.root])
-
-    assert lambda1_dependences == lambda1_requirements.splitlines()
-    assert lambda2_dependences == lambda2_requirements.splitlines()
+        builder.build_standard(builder.config.directory)
 
 
 @pytest.mark.slow
@@ -76,12 +19,17 @@ def test_build_with_real_sam(hatch):
 
     major, minor, _patch = python_version_tuple()
     assert major == "3"
+    build_conf = {"sam-params": ["--parameter-overrides", f"PythonVersion={major}.{minor}"]}
+    builder = hatch(build_conf=build_conf)
+    builder.build_standard(directory=builder.config.directory)
 
-    parameters = [{"PythonVersion": f"{major}.{minor}"}]
-    builder = hatch(use_container=False, parameter_overrides=parameters)
-    result = builder.build_standard(directory=builder.config.directory)
+    dist = Path(f"{builder.root}/.aws-sam")
 
-    assert result == builder.config.directory
+    assert (dist / "build.toml").is_file()
+    assert (dist / "build" / "template.yaml").is_file()
+    assert Path(
+        f"{builder.root}/.aws-sam/build/MyLambda1Func/my_app/lambdas/lambda1/main.py"
+    ).is_file()
 
 
 def test_clean_method(hatch):
@@ -105,8 +53,64 @@ def test_sam_template_config_option(hatch, template):
             "name": "my-app",
             "version": "0.0.1",
         },
-        "tool": {"hatch": {"build": {"targets": {"aws": {"template-name": template}}}}},
+        "tool": {"hatch": {"build": {"targets": {"aws": {"template": template}}}}},
     }
     builder = hatch(config=config)
 
-    assert builder.config.template_name == Path(builder.root) / template
+    assert builder.config.template == Path(builder.root) / template
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize(
+    "build_conf, expected_files",
+    (
+        (
+            {"include": ["src/my_app/common", "src/my_app/utils/logger.py"]},
+            [
+                "my_app/lambdas/lambda1/main.py",
+                "my_app/lambdas/lambda1/db.py",
+                "my_app/common/config.py",
+                "my_app/common/models.py",
+                "my_app/utils/logger.py",
+            ],
+        ),
+        (
+            None,
+            [
+                "my_app/lambdas/lambda1/main.py",
+                "my_app/lambdas/lambda1/db.py",
+            ],
+        ),
+        (
+            {"include": ["void/null/nothing"]},
+            [
+                "my_app/lambdas/lambda1/main.py",
+                "my_app/lambdas/lambda1/db.py",
+            ],
+        ),
+    ),
+)
+def test_build_lambda(hatch, build_conf, expected_files, aws_lambda):
+    builder = hatch(build_conf=build_conf)
+    builder.build_lambda(aws_lambda=aws_lambda)
+    dist_folder = Path(f"{builder.root}/.aws-sam/build/MyLambdaFunc")
+
+    expected = sorted([str(dist_folder / file) for file in expected_files])
+    files_in_dist = []
+    for root, _dirs, files in os.walk(dist_folder):
+        for file in files:
+            files_in_dist.append(os.path.join(root, file))
+
+    assert sorted(files_in_dist) == expected
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize(
+    "deps", [{"dependencies": ["pytest"]}, {"optional_dependencies": {"lambda1": ["pytest"]}}]
+)
+def test_build_lambda_with_pip_requirements(hatch, aws_lambda, deps):
+    builder = hatch(**deps)
+
+    builder.build_lambda(aws_lambda=aws_lambda)
+    dist_folder = Path(f"{builder.root}/.aws-sam/build/MyLambdaFunc")
+    assert (dist_folder / "pytest").is_dir()

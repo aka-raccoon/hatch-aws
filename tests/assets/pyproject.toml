@@ -18,6 +18,7 @@ lambda1 = ["pyaml"]
 lambda2 = ["requrest", "pydantic"]
 
 [tool.hatch.build.targets.aws]
-parameter-overrides = { Runtime = "3.8", Timeout = "120" }
-template-name = "template.yaml"
-use-container = false
+template = "template.yaml"
+use-sam = false
+sam-params = ["--region", "us-east-2", "--parallel"]
+include = ["src/my_app/common/db.py", "src/my_app/utils"]

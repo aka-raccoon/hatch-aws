@@ -8,8 +8,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  PYTHONUNBUFFERED: '1'
-  FORCE_COLOR: '1'
+  PYTHONUNBUFFERED: "1"
+  FORCE_COLOR: "1"
 
 jobs:
   static_analysis:
@@ -21,7 +21,7 @@ jobs:
       - name: Set up Python 3.9
         uses: actions/setup-python@v3
         with:
-          python-version: '3.9'
+          python-version: "3.9"
 
       - name: Install Hatch
         run: pip install --upgrade hatch
@@ -37,8 +37,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ['3.7', '3.8', '3.9']
+        os:
+          - ubuntu-latest
+          # - windows-latest
+          - macos-latest
+        python-version: ["3.7", "3.8", "3.9"]
 
     steps:
       - uses: actions/checkout@v2

@@ -1,28 +1,28 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 
 Parameters:
     PythonVersion:
         Type: String
         AllowedValues:
-            - '3.7'
-            - '3.8'
-            - '3.9'
+            - "3.7"
+            - "3.8"
+            - "3.9"
 
 Globals:
     Function:
         Architectures:
             - x86_64
         Runtime: !Sub python${PythonVersion}
-        Handler: app.handler
         MemorySize: 1024
+        CodeUri: src
         Timeout: 120
 
 Resources:
     MyLambda1Func:
         Type: AWS::Serverless::Function
         Properties:
-            CodeUri: src/lambda1
+            Handler: my_app.lambdas.lambda1.main.app
             Policies: AWSLambdaExecute
             Events:
                 CreateThumbnailEvent:
@@ -34,7 +34,7 @@ Resources:
     MyLambda2Func:
         Type: AWS::Serverless::Function
         Properties:
-            CodeUri: src/lambda2
+            Handler: my_app.lambdas.lambda2.main.app
             Policies: AWSLambdaExecute
             Events:
                 CreateThumbnailEvent:

@@ -8,32 +8,44 @@ from click.testing import CliRunner, Result
 from samcli.commands.build.command import cli
 from samcli.yamlhelper import yaml_parse
 
-from hatch_aws.exceptions import CodeUriMissing, CodeUriUnsupportedType
+from hatch_aws.exceptions import ParameterIsMissing, UnsupportedTypeForParameter
 
 
 @dataclass
 class AwsLambda:
-    default_path: Union[str, Dict, None]
+    default_code_uri: Union[str, Dict, None]
+    default_handler: Union[str, Dict, None]
     resource: Dict
     name: str
-    path: Path = field(init=False)
-    module: str = field(init=False)
+    code_uri: Path = field(init=False)
+    handler: Path = field(init=False)
+    module: Path = field(init=False)
 
     def __post_init__(self):
-        self.path = self._get_path()
-        self.module = self.path.name
+        self.code_uri = self._set_code_uri()
+        self.handler = self._set_handler()
+        self.module = self.handler.parent.parent
 
-    def _get_path(self) -> Path:
+    def _get_property_value(self, default_val: Union[str, Dict, None], param: str) -> str:
         try:
-            path = self.resource["Properties"]["CodeUri"]
+            value = self.resource["Properties"][param]
         except KeyError as error:
-            if not self.default_path:
-                raise CodeUriMissing(lambda_name=self.name) from error
-            path = self.default_path
+            if not default_val:
+                raise ParameterIsMissing(lambda_name=self.name, parameter=param) from error
+            value = default_val
 
-        if not isinstance(path, str):
-            raise CodeUriUnsupportedType(lambda_name=self.name)
-        return Path(path)
+        if not isinstance(value, str):
+            raise UnsupportedTypeForParameter(lambda_name=self.name, parameter=param)
+        return value
+
+    def _set_handler(self) -> Path:
+        value = self._get_property_value(default_val=self.default_handler, param="Handler")
+        value = value.replace(".", "/")
+        return Path(value)
+
+    def _set_code_uri(self) -> Path:
+        value = self._get_property_value(default_val=self.default_code_uri, param="CodeUri")
+        return Path(value)
 
 
 class Sam:
@@ -48,7 +60,8 @@ class Sam:
             AwsLambda(
                 name=resource,
                 resource=resources[resource],
-                default_path=self._get_global_code_uri(),
+                default_code_uri=self._get_global_code_uri(),
+                default_handler=self._get_global_handler(),
             )
             for resource, param in resources.items()
             if param["Type"] == "AWS::Serverless::Function"
@@ -57,28 +70,18 @@ class Sam:
     @staticmethod
     @contextmanager
     def disable_sam_logging() -> Generator[None, None, None]:
-        logging.getLogger("aws_lambda_builders").setLevel(logging.WARNING)
-        logging.getLogger("samcli").setLevel(logging.WARNING)
+        logging.disable(logging.CRITICAL)
         yield
-        logging.getLogger("aws_lambda_builders").setLevel(logging.INFO)
-        logging.getLogger("samcli").setLevel(logging.INFO)
+        logging.disable(logging.NOTSET)
 
     def _parse_sam_template(self) -> Dict:
         return yaml_parse(self.template_path.read_text(encoding="utf-8"))
 
-    def invoke_sam_build(
-        self, use_container: bool, parameter_overrides: Optional[List] = None
-    ) -> Result:
-        params = ["--template", str(self.template_path)]
-        if use_container:
-            params.append("--use-container")
-        if parameter_overrides:
-            args = []
-            for parameters in parameter_overrides:
-                for key, value in parameters.items():
-                    args.append(f"{key}={value}")
-            params.append("--parameter-overrides")
-            params.append(" ".join(args))
+    def invoke_sam_build(self, build_dir: str, params: Optional[List[str]] = None) -> Result:
+        def_params = ["--template", str(self.template_path), "--build-dir", build_dir]
+        if not params:
+            params = []
+        params.extend(def_params)
 
         with self.disable_sam_logging():
             return CliRunner().invoke(cli, params, catch_exceptions=False)
@@ -86,5 +89,11 @@ class Sam:
     def _get_global_code_uri(self) -> Union[Dict, str, None]:
         try:
             return self.template["Globals"]["Function"]["CodeUri"]
+        except KeyError:
+            return None
+
+    def _get_global_handler(self) -> Union[Dict, str, None]:
+        try:
+            return self.template["Globals"]["Function"]["Handler"]
         except KeyError:
             return None
