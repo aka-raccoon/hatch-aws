@@ -114,3 +114,14 @@ def test_build_lambda_with_pip_requirements(hatch, aws_lambda, deps):
     builder.build_lambda(aws_lambda=aws_lambda)
     dist_folder = Path(f"{builder.root}/.aws-sam/build/MyLambdaFunc")
     assert (dist_folder / "pytest").is_dir()
+
+
+@pytest.mark.slow
+def test_build_lambda_limited_src(hatch, limited_src_lambda):
+    builder = hatch()
+
+    builder.build_lambda(aws_lambda=limited_src_lambda)
+
+    dist_folder = Path(f"{builder.root}/.aws-sam/build/MyLambdaFunc")
+    files = os.listdir(dist_folder)
+    assert sorted(files) == ["db.py", "main.py"]
