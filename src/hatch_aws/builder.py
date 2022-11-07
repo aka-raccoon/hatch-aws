@@ -101,7 +101,7 @@ class AwsBuilder(BuilderInterface):
         build_dir = Path(self.config.directory) / aws_lambda.name
         if build_dir.exists():
             rmtree(build_dir)
-        build_dir.mkdir(parents=True)
+        build_dir.parent.mkdir(parents=True, exist_ok=True)
         lambda_dir = self.root / aws_lambda.code_uri / aws_lambda.module
         dist_lambda = build_dir / aws_lambda.module
         copytree(src=lambda_dir, dst=dist_lambda)
