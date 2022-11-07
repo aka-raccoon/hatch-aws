@@ -108,3 +108,25 @@ def aws_lambda() -> AwsLambda:
         },
         name="MyLambdaFunc",
     )
+
+
+@pytest.fixture
+def limited_src_lambda() -> AwsLambda:
+    return AwsLambda(
+        default_code_uri=None,
+        default_handler=None,
+        resource={
+            "Properties": {
+                "CodeUri": "src/my_app/lambdas/lambda1",
+                "Handler": "main.app",
+                "Policies": "AWSLambdaExecute",
+                "Events": {
+                    "CreateThumbnailEvent": {
+                        "Type": "S3",
+                        "Properties": {"Bucket": "SrcBucket", "Events": "s3:ObjectCreated:*"},
+                    }
+                },
+            }
+        },
+        name="MyLambdaFunc",
+    )
