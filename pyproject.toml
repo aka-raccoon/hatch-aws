@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "hatch-aws"
-version = "0.2.0"
+version = "0.2.1"
 description = 'Hatch plugin for building AWS Lambda functions with SAM'
 readme = "README.md"
 requires-python = ">=3.7"
@@ -117,7 +117,7 @@ markers = [
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.2.0"
+version = "0.2.1"
 version_files = ["pyproject.toml:^version"]
 tag_format = "$version"
 bump_message = "bump: $current_version → $new_version"

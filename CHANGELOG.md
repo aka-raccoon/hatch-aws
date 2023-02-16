@@ -1,3 +1,9 @@
+## 0.2.1 (2023-02-16)
+
+### Refactor
+
+- drop dependency on sam cli
+
 ## 0.2.0 (2023-01-02)
 
 ### Feat
