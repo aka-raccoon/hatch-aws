@@ -2,11 +2,10 @@ import logging
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
+from subprocess import run  # nosec
 from typing import Dict, Generator, List, Optional, Union
 
-from click.testing import CliRunner, Result
-from samcli.commands.build.command import cli
-from samcli.yamlhelper import yaml_parse
+import yaml
 
 from hatch_aws.exceptions import ParameterIsMissing, UnsupportedTypeForParameter
 
@@ -75,16 +74,18 @@ class Sam:
         logging.disable(logging.NOTSET)
 
     def _parse_sam_template(self) -> Dict:
-        return yaml_parse(self.template_path.read_text(encoding="utf-8"))
+        yaml.SafeLoader.add_multi_constructor("!", lambda *args: None)
+        return yaml.safe_load(self.template_path.read_text(encoding="utf-8"))
 
-    def invoke_sam_build(self, build_dir: str, params: Optional[List[str]] = None) -> Result:
+    def invoke_sam_build(self, build_dir: str, params: Optional[List[str]] = None):
         def_params = ["--template", str(self.template_path), "--build-dir", build_dir]
         if not params:
             params = []
         params.extend(def_params)
 
-        with self.disable_sam_logging():
-            return CliRunner().invoke(cli, params, catch_exceptions=False)
+        return run(
+            ["sam", "build"] + params, text=True, encoding="utf-8", capture_output=True, check=False
+        )
 
     def _get_global_code_uri(self) -> Union[Dict, str, None]:
         try:

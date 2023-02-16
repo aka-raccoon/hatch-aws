@@ -2,7 +2,6 @@
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-
 [project]
 name = "hatch-aws"
 version = "0.2.0"
@@ -18,11 +17,17 @@ classifiers = [
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
   "Framework :: Hatch",
 ]
-dependencies = ["hatchling>=0.21.0", "aws-sam-cli>=1.55.0"]
+dependencies = ["hatchling", "PyYAML"]
+
+[project.optional-dependencies]
+dev = ["bandit[toml]", "black", "isort", "mypy", "pylint", "types-PyYAML"]
+test = ["coverage", "pytest", "pytest-cov", "pytest-mock", "tomli_w"]
+
 
 [project.entry-points.hatch]
 aws = "hatch_aws.hooks"
@@ -44,25 +49,8 @@ show_missing = true
 skip_covered = false
 fail_under = 70
 
-
-[tool.hatch.build.targets.sdist]
-
-[tool.hatch.build.targets.wheel]
-
 [tool.hatch.envs.default]
-dependencies = [
-  "isort",
-  "black==20.8b0",
-  "pylint",
-  "mypy",
-  "bandit",
-  "toml",
-  "coverage",
-  "pytest",
-  "pytest-cov",
-  "pytest-mock",
-  "tomli_w",
-]
+features = ["dev", "test"]
 
 [tool.hatch.envs.default.scripts]
 check = [
@@ -75,28 +63,23 @@ check = [
 format = ["black src/", "isort src/"]
 
 [tool.hatch.envs.test]
-dependencies = [
-  "coverage[toml]",
-  "pytest",
-  "pytest-cov",
-  "pytest-mock",
-  "tomli_w",
-]
+features = ["test"]
 
-[tool.hatch.envs.cz]
-dependencies = ["commitizen"]
+[tool.hatch.envs.test.scripts]
+unit = "pytest -m 'not integration' --cov"
+integration = "pytest -m 'integration'"
+
+[tool.hatch.envs.sam]
+dependencies = ["aws-sam-cli"]
 
 [[tool.hatch.envs.test.matrix]]
 python = ["3.7", "3.8", "3.9", "3.10"]
 
-
 [tool.black]
 line-length = 100
 
-
 [tool.isort]
 profile = "black"
-
 
 [tool.pylint.messages_control]
 disable = [
@@ -108,10 +91,8 @@ disable = [
 [tool.pylint.format]
 max-line-length = 100
 
-
 [tool.bandit]
 exclude_dirs = ["tests/"]
-
 
 [tool.mypy]
 namespace_packages = true
@@ -126,14 +107,13 @@ show_column_numbers = true
 show_error_codes = true
 show_error_context = true
 
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [
   "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+  "integration: marks integration tests (deselect with '-m \"not integration\"')",
   "serial",
 ]
-filterwarnings = ["ignore:.*are deprecated.*:Warning"]
 
 [tool.commitizen]
 name = "cz_conventional_commits"
