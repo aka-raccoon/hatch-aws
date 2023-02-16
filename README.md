@@ -12,15 +12,17 @@ AWS builder plugin for **[Hatch 🥚🐍](<https://hatch.pypa.io/latest/>)**.
 
 ---
 
+Checkout my other plugin [hatch-aws-publisher](https://github.com/aka-raccoon/hatch-aws-publisher).
+
 ## Table of Contents
 
 - [hatch-aws](#hatch-aws)
-  - [Table of Contents](#table-of-contents)
-  - [Global dependency](#global-dependency)
-  - [Builder](#builder)
-    - [How to use it](#how-to-use-it)
-    - [Options](#options)
-  - [License](#license)
+   - [Table of Contents](#table-of-contents)
+   - [Global dependency](#global-dependency)
+   - [Builder](#builder)
+      - [How to use it](#how-to-use-it)
+      - [Options](#options)
+   - [License](#license)
 
 ## Global dependency
 
@@ -86,7 +88,7 @@ To enable it, include following configuration in you config file:
    ```toml
    [project.optional-dependencies]
    lambda1 = ["pyaml"]
-   lambda2 = ["requrest", "pydantic"]
+   lambda2 = ["request", "pydantic"]
    ```
 
 4. Specify additional folders and files you want to copy to the build folder.
