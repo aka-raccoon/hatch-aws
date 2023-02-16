@@ -1,0 +1,42 @@
+---
+name: Bumper
+
+on:
+  push:
+    branches:
+      - 'main'
+
+env:
+  PYTHONUNBUFFERED: '1'
+  FORCE_COLOR: '1'
+
+jobs:
+  bump:
+    if: "!startsWith(github.event.head_commit.message, 'bump:')"
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+    name: Create PR
+    steps:
+      - name: Checkout 🌩️
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Set up Python 🐍
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install pumper ⛽︎
+        run: pip install pumper==0.2.0
+      - name: Create PR 🥘
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pumper create --gh-env --assign --label bump
+      - name: Merge PR ✅
+        if: env.PR_NUM
+        env:
+          GITHUB_TOKEN: ${{ secrets.PUMPER }}
+        run: |
+          pumper approve
+          pumper merge --method rebase

@@ -1,0 +1,41 @@
+---
+name: Guardian
+
+on:
+  push:
+    branches-ignore:
+      - 'main'
+env:
+  PYTHONUNBUFFERED: '1'
+  FORCE_COLOR: '1'
+
+jobs:
+  quality-gate:
+    name: >
+      Python ${{ matrix.python }} on ${{ startsWith(matrix.os, 'macos-') && 'macOS' || 'Linux' }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+        python: ['3.7', '3.8', '3.9', '3.10', '3.11']
+    steps:
+      - name: Checkout 🌩️
+        uses: actions/checkout@v3
+      - name: Set up Python 🐍
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install Hatch 🥚
+        run: |
+          python -m pip install --upgrade pip
+          pip install hatch
+      - name: Static analysis 👀
+        run: hatch run check
+      - name: Setup AWS SAM (for testing) 👾
+        uses: aws-actions/setup-sam@v2
+      - name: Unit tests 🔍
+        if: success() || failure()
+        run: hatch run test:unit

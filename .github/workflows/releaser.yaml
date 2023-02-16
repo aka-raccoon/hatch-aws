@@ -1,0 +1,33 @@
+---
+name: Releaser
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+
+jobs:
+  create:
+    if: |
+      github.event.pull_request.merged &&
+      startsWith(github.head_ref, 'release/')
+    runs-on: ubuntu-latest
+    name: Create release
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout 🌩️
+        uses: actions/checkout@v3
+      - name: Get version ✌️
+        run: |
+          VERSION=$(cut -d "/" -f2 <<< ${{ github.event.pull_request.title }})
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+      - name: Release 🚀
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create ${{ env.VERSION }} \
+            --notes "${{ github.event.pull_request.body }}" \
+            --title ${{ env.VERSION }}
