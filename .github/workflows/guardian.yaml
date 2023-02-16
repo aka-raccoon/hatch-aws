@@ -38,4 +38,4 @@ jobs:
         uses: aws-actions/setup-sam@v2
       - name: Unit tests 🔍
         if: success() || failure()
-        run: hatch run test:unit
+        run: hatch run +py='${{ matrix.python }}' test:unit
