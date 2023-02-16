@@ -3,7 +3,7 @@ from pathlib import Path
 from shlex import quote
 from shutil import copy, copytree, rmtree
 from subprocess import PIPE, check_call  # nosec
-from typing import Callable, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from hatchling.builders.config import BuilderConfig
 from hatchling.builders.plugin.interface import BuilderInterface
@@ -147,8 +147,8 @@ class AwsBuilder(BuilderInterface):
         result = sam.invoke_sam_build(
             build_dir=self.config.directory, params=self.config.sam_params
         )
-        if result.exit_code != 0:
-            self.app.display_error(result.output)
+        if result.returncode != 0:
+            self.app.display_error(result.stderr)
             self.app.abort("SAM build failed!")
 
         if not self.config.use_sam:
@@ -169,5 +169,5 @@ class AwsBuilder(BuilderInterface):
         )
 
     @classmethod
-    def get_config_class(cls) -> Callable[..., AwsBuilderConfig]:
+    def get_config_class(cls):
         return AwsBuilderConfig
