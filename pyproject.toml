@@ -28,15 +28,17 @@ dependencies = ["hatchling", "PyYAML"]
 dev = ["bandit[toml]", "black", "isort", "mypy", "pylint", "types-PyYAML"]
 test = ["coverage", "pytest", "pytest-cov", "pytest-mock", "tomli_w"]
 
-
 [project.entry-points.hatch]
 aws = "hatch_aws.hooks"
+
+[tool.hatch.build]
+exclude = [".github", "tests", ".editorconfig"]
+sources = ["src"]
 
 [project.urls]
 Documentation = "https://github.com/aka-raccoon/hatch-aws#readme"
 Issues = "https://github.com/aka-raccoon/hatch-aws/issues"
 Source = "https://github.com/aka-raccoon/hatch-aws"
-
 
 [tool.coverage.run]
 branch = true
@@ -66,11 +68,7 @@ format = ["black src/", "isort src/"]
 features = ["test"]
 
 [tool.hatch.envs.test.scripts]
-unit = "pytest -m 'not integration' --cov"
-integration = "pytest -m 'integration'"
-
-[tool.hatch.envs.sam]
-dependencies = ["aws-sam-cli"]
+unit = "pytest --cov"
 
 [[tool.hatch.envs.test.matrix]]
 python = ["3.7", "3.8", "3.9", "3.10"]
