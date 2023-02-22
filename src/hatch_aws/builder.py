@@ -99,22 +99,7 @@ class AwsBuilder(BuilderInterface):
 
     def build_lambda(self, aws_lambda: AwsLambda):
         build_dir = Path(self.config.directory) / aws_lambda.name
-        if build_dir.exists():
-            rmtree(build_dir)
-        build_dir.parent.mkdir(parents=True, exist_ok=True)
-        lambda_dir = self.root / aws_lambda.code_uri / aws_lambda.module
-        dist_lambda = build_dir / aws_lambda.module
-        copytree(src=lambda_dir, dst=dist_lambda)
-        if self.config.include:
-            for thing in self.config.include:
-                thing_as_path = Path(f"{self.root}/{thing}")
-                thing = thing.replace("src/", "")
-                dist = build_dir / thing
-                if thing_as_path.is_file():
-                    dist.parent.mkdir(parents=True, exist_ok=True)
-                    copy(src=thing_as_path, dst=dist)
-                if thing_as_path.is_dir():
-                    copytree(src=thing_as_path, dst=dist)
+        deps = self.get_dependencies(module_name=normalize_project_name(aws_lambda.name))
 
         deps = self.get_dependencies(module_name=aws_lambda.module.name)
         if deps:
