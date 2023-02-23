@@ -3,6 +3,7 @@ from pathlib import Path
 from platform import python_version_tuple
 
 import pytest
+from hatchling.builders.plugin.interface import IncludedFile
 
 
 @pytest.mark.slow
@@ -53,10 +54,13 @@ def test_sam_template_config_option(hatch, template):
 
 @pytest.mark.slow
 @pytest.mark.parametrize(
-    "build_conf, expected_files",
+    "force_include, expected_files",
     (
         (
-            {"include": ["src/my_app/common", "src/my_app/utils/logger.py"]},
+            {
+                "src/my_app/common": "my_app/common",
+                "src/my_app/utils/logger.py": "my_app/utils/logger.py",
+            },
             [
                 "my_app/lambdas/lambda1/main.py",
                 "my_app/lambdas/lambda1/db.py",
@@ -73,7 +77,7 @@ def test_sam_template_config_option(hatch, template):
             ],
         ),
         (
-            {"include": ["void/null/nothing"]},
+            {"void/null/nothing": "void/null/nothing"},
             [
                 "my_app/lambdas/lambda1/main.py",
                 "my_app/lambdas/lambda1/db.py",
@@ -81,38 +85,53 @@ def test_sam_template_config_option(hatch, template):
         ),
     ),
 )
-def test_build_lambda(hatch, build_conf, expected_files, aws_lambda):
-    builder = hatch(build_conf=build_conf)
-    builder.build_lambda(aws_lambda=aws_lambda)
-    dist_folder = Path(f"{builder.root}/.aws-sam/build/MyLambdaFunc")
+def test_build_lambda(hatch, force_include, expected_files, aws_lambda):
+    builder = hatch(force_include=force_include, build=True)
+
+    shared_files = []
+
+    if force_include:
+        for rel, dist in force_include.items():
+            absolute_path = Path(builder.root) / rel
+            if absolute_path.is_file():
+                shared_files.append(
+                    IncludedFile(distribution_path=dist, relative_path=rel, path=str(absolute_path))
+                )
+            for path in absolute_path.rglob("*"):
+                if path.is_file():
+                    shared_files.append(
+                        IncludedFile(
+                            distribution_path=dist, relative_path=rel, path=str(absolute_path)
+                        )
+                    )
+
+    builder.build_lambda(aws_lambda=aws_lambda, shared_files=shared_files)
+    dist_folder = Path(f"{builder.root}/.aws-sam/build/MyLambda1Func")
 
     expected = sorted([str(dist_folder / file) for file in expected_files])
-    files_in_dist = []
-    for root, _dirs, files in os.walk(dist_folder):
-        for file in files:
-            files_in_dist.append(os.path.join(root, file))
+    files_in_dist = [str(path) for path in dist_folder.rglob("*") if path.is_file()]
 
     assert sorted(files_in_dist) == expected
 
 
 @pytest.mark.slow
 @pytest.mark.parametrize(
-    "deps", [{"dependencies": ["pytest"]}, {"optional_dependencies": {"lambda1": ["pytest"]}}]
+    "deps", [{"dependencies": ["pytest"]}, {"optional_dependencies": {"mylambda1func": ["pytest"]}}]
 )
 def test_build_lambda_with_pip_requirements(hatch, aws_lambda, deps):
-    builder = hatch(**deps)
+    builder = hatch(build=True, **deps)
 
-    builder.build_lambda(aws_lambda=aws_lambda)
-    dist_folder = Path(f"{builder.root}/.aws-sam/build/MyLambdaFunc")
+    builder.build_lambda(aws_lambda=aws_lambda, shared_files=[])
+    dist_folder = Path(f"{builder.root}/.aws-sam/build/MyLambda1Func")
     assert (dist_folder / "pytest").is_dir()
 
 
 @pytest.mark.slow
 def test_build_lambda_limited_src(hatch, limited_src_lambda):
-    builder = hatch()
+    builder = hatch(build=True)
 
-    builder.build_lambda(aws_lambda=limited_src_lambda)
+    builder.build_lambda(aws_lambda=limited_src_lambda, shared_files=[])
 
-    dist_folder = Path(f"{builder.root}/.aws-sam/build/MyLambdaFunc")
+    dist_folder = Path(f"{builder.root}/.aws-sam/build/MyLambda3Func")
     files = os.listdir(dist_folder)
     assert sorted(files) == ["db.py", "main.py"]

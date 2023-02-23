@@ -15,7 +15,7 @@ Resources:
     Properties:
       Handler: my_app.lambdas.lambda1.main.app
       Policies: AWSLambdaExecute
-      Runtime: python3.9
+      Runtime: python3.7
       Timeout: 900
       Events:
         CreateThumbnailEvent:
@@ -27,7 +27,7 @@ Resources:
   MyLambda2Func:
     Type: AWS::Serverless::Function
     Properties:
-      Runtime: python3.9
+      Runtime: python3.7
       CodeUri: test
       Handler: my_app.lambdas.lambda2.main.app
       Policies: AWSLambdaExecute
@@ -42,7 +42,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: src/my_app/lambdas/lambda3
-      Runtime: python3.9
+      Runtime: python3.7
       Handler: main.app
       Policies: AWSLambdaExecute
       Events:
