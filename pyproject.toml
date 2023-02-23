@@ -7,13 +7,12 @@ name = "hatch-aws"
 version = "0.2.1"
 description = 'Hatch plugin for building AWS Lambda functions with SAM'
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 license = { file = "LICENSE.txt" }
 keywords = ["hatch", "aws", "plugin", "sam", "lambda"]
 authors = [{ name = "aka-raccoon", email = "aka-raccoon@pm.me" }]
 classifiers = [
   "Programming Language :: Python",
-  "Programming Language :: Python :: 3.7",
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
@@ -71,7 +70,7 @@ features = ["test"]
 unit = "pytest --cov"
 
 [[tool.hatch.envs.test.matrix]]
-python = ["3.7", "3.8", "3.9", "3.10"]
+python = ["3.8", "3.9"]
 
 [tool.black]
 line-length = 100
