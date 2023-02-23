@@ -17,8 +17,14 @@ dependencies = ["boto3"]
 lambda1 = ["pyaml"]
 lambda2 = ["requrest", "pydantic"]
 
+[tool.hatch.build.force-include]
+"src/batman/common" = "*/batman/common" # copy to all lambda funcs
+".editorconfig" = ".editorconfig.txt"
+"CHANGELOG.md" = "../CH.txt"
+"images/" = "*/images"
+
+
 [tool.hatch.build.targets.aws]
 template = "template.yaml"
 use-sam = false
 sam-params = ["--region", "us-east-2", "--parallel"]
-include = ["src/my_app/common/db.py", "src/my_app/utils"]
