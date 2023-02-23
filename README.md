@@ -44,9 +44,9 @@ To start build process, run `hatch build -t aws`:
 ❯ hatch build -t aws
 [aws]
 Building lambda functions ...
-***REMOVED*** ... success
+MyAwsLambdaFunc ... success
 Build successfull 🚀
-/Users/***REMOVED***/dev/***REMOVED***/.aws-sam/build
+/path/to/build/.aws-sam/build
 ```
 
 ### How to use it
@@ -126,7 +126,7 @@ Build successfull 🚀
 Following table contains available customization of builder behavior. You can find example of `pyproject.toml` in [tests/assets/pyproject.toml](https://github.com/aka-raccoon/hatch-aws/blob/main/tests/assets/pyproject.toml).
 
 | Option       | Type    | Default        | Description                                              |
-| ------------ | ------- | -------------- | ------------------------------------------------ ------- |
+| ------------ | ------- | -------------- | -------------------------------------------------------- |
 | `template`   | `str`   | `template.yml` | SAM template filename.                                   |
 | `use-sam`    | `bool`  | `false`        | Use only `sam build` command without any custom actions. |
 | `sam-params` | `array` |                | Additional `sam build` args.                             |
