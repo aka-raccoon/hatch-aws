@@ -1,14 +1,25 @@
 import pytest
 
-from hatch_aws.aws import AwsLambda
-from hatch_aws.exceptions import ParameterIsMissing, UnsupportedTypeForParameter
+from hatch_aws.aws import Sam
 
 
-def test_aws_lambda_code_uri_missing_exception():
-    with pytest.raises(ParameterIsMissing):
-        AwsLambda(default_code_uri=None, default_handler=None, resource={}, name="Test")
+def test_sam_init(asset):
+    sam = Sam(template=asset("sam-template.yml"))
+
+    lambda1, lambda2, lambda3, *other = sam.lambdas
+
+    assert lambda1.path.as_posix() == "my_app/lambdas/lambda1"
+    assert lambda1.name == "MyLambda1Func"
+
+    assert lambda2.path.as_posix() == "my_app/lambdas/lambda2"
+    assert lambda2.name == "MyLambda2Func"
+
+    assert lambda3.path.as_posix() == "."
+    assert lambda3.name == "MyLambda3Func"
+
+    assert not other
 
 
-def test_aws_lambda_code_uri_unsupported_type_exception():
-    with pytest.raises(UnsupportedTypeForParameter):
-        AwsLambda(default_code_uri={"!Sub": "test"}, default_handler=None, resource={}, name="Test")
+def test_unsupported_template(asset):
+    with pytest.raises(AttributeError):
+        Sam(template=asset("sam-template-unsupported-handler.yml"))

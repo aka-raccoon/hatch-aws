@@ -1,5 +1,7 @@
 from pathlib import Path
 from shutil import copy
+from subprocess import check_call
+from sys import version_info
 from tempfile import TemporaryDirectory
 from typing import Any, Callable, Dict, Generator, List, Optional
 
@@ -39,7 +41,7 @@ def hatch(temp_dir, asset) -> Callable:
             "name": "my-app",
             "version": "0.0.1",
         },
-        "tool": {"hatch": {"build": {"only-packages": False, "targets": {"aws": {}}}}},
+        "tool": {"hatch": {"build": {"targets": {"aws": {}}}}},
     }
 
     def _make_project(
@@ -48,7 +50,9 @@ def hatch(temp_dir, asset) -> Callable:
         optional_dependencies: Optional[Dict] = None,
         template: str = "sam-template.yml",
         build_conf: Optional[Dict] = None,
+        force_include: Optional[Dict] = None,
         files: Optional[List[str]] = None,
+        build: bool = False,
     ):
         if not config:
             config = default_config
@@ -59,8 +63,14 @@ def hatch(temp_dir, asset) -> Callable:
 
         if build_conf:
             config["tool"]["hatch"]["build"]["targets"]["aws"] = build_conf
+        if force_include:
+            config["tool"]["hatch"]["build"]["force-include"] = force_include
 
         builder = AwsBuilder(str(temp_dir), config=config)
+
+        major, minor, *_ = version_info
+        if (major, minor) < (3, 9):
+            template = f"sam-template-{major}.{minor}.yml"
 
         copy(src=asset(template), dst=temp_dir / "template.yml")
 
@@ -75,6 +85,8 @@ def hatch(temp_dir, asset) -> Callable:
                 "src/my_app/lambdas/lambda1/main.py",
                 "src/my_app/lambdas/lambda1/db.py",
                 "src/my_app/lambdas/lambda2/main.py",
+                "src/my_app/lambdas/lambda3/main.py",
+                "src/my_app/lambdas/lambda3/db.py",
                 "src/my_app/common/config.py",
                 "src/my_app/common/models.py",
                 "src/my_app/utils/storage.py",
@@ -82,6 +94,17 @@ def hatch(temp_dir, asset) -> Callable:
             ]
 
         make_files(root=temp_dir, files=files)
+        if build:
+            check_call(
+                [
+                    "sam",
+                    "build",
+                    "--template",
+                    temp_dir / "template.yml",
+                    "--build-dir",
+                    temp_dir / ".aws-sam/build",
+                ]
+            )
 
         return builder
 
@@ -90,43 +113,9 @@ def hatch(temp_dir, asset) -> Callable:
 
 @pytest.fixture
 def aws_lambda() -> AwsLambda:
-    return AwsLambda(
-        default_code_uri=None,
-        default_handler=None,
-        resource={
-            "Properties": {
-                "CodeUri": "src",
-                "Handler": "my_app.lambdas.lambda1.main.app",
-                "Policies": "AWSLambdaExecute",
-                "Events": {
-                    "CreateThumbnailEvent": {
-                        "Type": "S3",
-                        "Properties": {"Bucket": "SrcBucket", "Events": "s3:ObjectCreated:*"},
-                    }
-                },
-            }
-        },
-        name="MyLambdaFunc",
-    )
+    return AwsLambda(name="MyLambda1Func", path=Path("my_app/lambdas/lambda1"))
 
 
 @pytest.fixture
 def limited_src_lambda() -> AwsLambda:
-    return AwsLambda(
-        default_code_uri=None,
-        default_handler=None,
-        resource={
-            "Properties": {
-                "CodeUri": "src/my_app/lambdas/lambda1",
-                "Handler": "main.app",
-                "Policies": "AWSLambdaExecute",
-                "Events": {
-                    "CreateThumbnailEvent": {
-                        "Type": "S3",
-                        "Properties": {"Bucket": "SrcBucket", "Events": "s3:ObjectCreated:*"},
-                    }
-                },
-            }
-        },
-        name="MyLambdaFunc",
-    )
+    return AwsLambda(path=Path("."), name="MyLambda3Func")

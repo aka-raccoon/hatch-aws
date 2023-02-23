@@ -17,12 +17,12 @@ Checkout my other plugin [hatch-aws-publisher](https://github.com/aka-raccoon/ha
 ## Table of Contents
 
 - [hatch-aws](#hatch-aws)
-   - [Table of Contents](#table-of-contents)
-   - [Global dependency](#global-dependency)
-   - [Builder](#builder)
-      - [How to use it](#how-to-use-it)
-      - [Options](#options)
-   - [License](#license)
+    - [Table of Contents](#table-of-contents)
+    - [Global dependency](#global-dependency)
+    - [Builder](#builder)
+        - [How to use it](#how-to-use-it)
+        - [Options](#options)
+    - [License](#license)
 
 ## Global dependency
 
@@ -38,19 +38,16 @@ build-backend = "hatchling.build"
 
 The [builder plugin](https://hatch.pypa.io/latest/plugins/builder/reference/) name is called `aws`.
 
-To enable it, include following configuration in you config file:
+To start build process, run `hatch build -t aws`:
 
-- **pyproject.toml**
-
-    ```toml
-    [tool.hatch.build.targets.aws]
-    ```
-
-- **hatch.toml**
-
-    ```toml
-    [build.targets.aws]
-    ```
+```bash
+❯ hatch build -t aws
+[aws]
+Building lambda functions ...
+***REMOVED*** ... success
+Build successfull 🚀
+/Users/***REMOVED***/dev/***REMOVED***/.aws-sam/build
+```
 
 ### How to use it
 
@@ -83,7 +80,7 @@ To enable it, include following configuration in you config file:
    dependencies = ["boto3"]
    ```
 
-3. Specify requirements for your lambda functions in `pyproject.toml` as optional dependencies. Use module (folder) name.
+3. Specify requirements for your lambda functions in `pyproject.toml` as optional dependencies. Use resource name from SAM template, but you have to adapt it to be compliant with [PEP standard](https://peps.python.org/pep-0503/#normalized-names>) (transform to lower case and replace `_` with `-`). For example, if you function name in SAM template is `GetAll_Accounts`, use `getall-accounts`.
 
    ```toml
    [project.optional-dependencies]
@@ -91,20 +88,24 @@ To enable it, include following configuration in you config file:
    lambda2 = ["request", "pydantic"]
    ```
 
-4. Specify additional folders and files you want to copy to the build folder.
+4. Specify additional paths(source/destination) you want to copy to the build folder. Destination is relative to a build directory (`.aws-sam/build` by default). You can use glob `*` to copy common to all lambda functions.
 
    ```toml
-   [tool.hatch.build.targets.aws]
-   include = ["src/my_app/common"]
+   [tool.hatch.build.force-include]
+   "src/batman/common" = "*/batman/common" # copy to all lambda functions
+   ".editorconfig" = ".editorconfig.txt"
+   "CHANGELOG.md" = "../CH.txt"
+   "images/" = "*/images"
    ```
 
-5. Set the `CodeUri` and `Handler` parameter pointing to your lambdas in SAM template.
+5. Set the `CodeUri` and `Handler` parameter pointing to your lambdas in SAM template. Only resources with `Runtime: python{version}` are supported. The rest is ignored.
 
    ```yaml
    Resources:
     Lambda1:
       Type: AWS::Serverless::Function
       Properties:
+        Runtime: python3.9
         FunctionName: lambda1-function
         CodeUri: src
         Handler: my_app.lambdas.lambda1.main.app
@@ -113,33 +114,22 @@ To enable it, include following configuration in you config file:
     Lambda2:
       Type: AWS::Serverless::Function
       Properties:
+        Runtime: python3.9
         FunctionName: lambda2-function
         CodeUri: src
         Handler: my_app.lambdas.lambda2.main.app
         ...
    ```
 
-6. Run `hatch build` command.
-
-   ```shell
-   ❯ hatch build
-   [aws]
-   Building lambda functions ...
-   Lambda1 ... success
-   Lambda2 ... success
-   Build successfull 🚀
-   /path/to/projects/.aws-sam/build
-   ```
-
 ### Options
 
 Following table contains available customization of builder behavior. You can find example of `pyproject.toml` in [tests/assets/pyproject.toml](https://github.com/aka-raccoon/hatch-aws/blob/main/tests/assets/pyproject.toml).
 
-| Option       | Type    | Default        | Description                                             |
-| ------------ | ------- | -------------- | ------------------------------------------------------- |
-| `template`   | `str`   | `template.yml` | The filename of a SAM template.                         |
-| `use-sam`    | `bool`  | `false`        | Use only SAM for build. Do not run custom copy actions. |
-| `sam-params` | `array` |                | Pass additional options to a SAM build command          |
+| Option       | Type    | Default        | Description                                              |
+| ------------ | ------- | -------------- | ------------------------------------------------ ------- |
+| `template`   | `str`   | `template.yml` | SAM template filename.                                   |
+| `use-sam`    | `bool`  | `false`        | Use only `sam build` command without any custom actions. |
+| `sam-params` | `array` |                | Additional `sam build` args.                             |
 
 ## License
 
