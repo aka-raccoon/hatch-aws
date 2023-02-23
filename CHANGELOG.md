@@ -1,3 +1,12 @@
+## 1.0.0 (2023-02-23)
+
+### Refactor
+
+- drop support for python 3.7
+- change build process to support hatch config api
+- use PEP complient lambda func name in pyproject
+- optimize AwsLambda model
+
 ## 0.2.1 (2023-02-16)
 
 ### Refactor
