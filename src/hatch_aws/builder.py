@@ -55,6 +55,7 @@ class AwsBuilder(BuilderInterface):
         if not deps:
             return
         requirements_file = target / "requirements.txt"
+        requirements_file.parent.mkdir(exist_ok=True, parents=True)
         requirements_file.write_text(data="\n".join(deps), encoding="utf-8")
         check_call(
             [
