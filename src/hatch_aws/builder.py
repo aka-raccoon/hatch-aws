@@ -79,7 +79,7 @@ class AwsBuilder(BuilderInterface):
     def build_standard(self, directory: str, **_build_data) -> str:
         self.config: AwsBuilderConfig
         try:
-            sam = Sam(template=self.config.template)
+            sam = Sam(sam_exec=self.config.sam_exec, template=self.config.template)
         except AttributeError:
             self.app.abort(
                 "Unsupported type for a 'CodeUri' or 'Handler'. Only string is supported."

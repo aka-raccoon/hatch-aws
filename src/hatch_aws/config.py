@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import List, Optional
 
@@ -13,6 +14,7 @@ class AwsBuilderConfig(BuilderConfig):
         super().__init__(*args, **kwargs)
         self.__directory = None
         self.__template = None
+        self.__sam_exec = "sam"
         self.__use_sam = False
         self.__sam_params = None
 
@@ -49,6 +51,16 @@ class AwsBuilderConfig(BuilderConfig):
             self.__template = template
 
         return self.__template
+
+    @property
+    def sam_exec(self) -> str:
+        self.__sam_exec = self.target_config.get("sam_exec", self.__sam_exec)
+        self.__sam_exec = os.getenv("HATCH_SAM_EXEC", self.__sam_exec)
+        if not isinstance(self.__sam_exec, str):
+            raise TypeError(
+                f"Field `tool.hatch.build.targets.{self.plugin_name}.sam_exec` " "must be a string."
+            )
+        return self.__sam_exec
 
     @property
     def use_sam(self) -> bool:

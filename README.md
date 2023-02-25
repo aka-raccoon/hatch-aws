@@ -129,6 +129,7 @@ Following table contains available customization of builder behavior. You can fi
 | ------------ | ------- | -------------- | -------------------------------------------------------- |
 | `template`   | `str`   | `template.yml` | SAM template filename.                                   |
 | `use-sam`    | `bool`  | `false`        | Use only `sam build` command without any custom actions. |
+| `sam-exec`   | `str`   | `sam`          | Path to `sam` executable. Env var: `HATCH_SAM_EXEC`.     |
 | `sam-params` | `array` |                | Additional `sam build` args.                             |
 
 ## License

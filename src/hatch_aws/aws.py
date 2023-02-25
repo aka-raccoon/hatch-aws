@@ -14,7 +14,8 @@ class AwsLambda:
 
 
 class Sam:  # pylint: disable=too-few-public-methods
-    def __init__(self, template: Path):
+    def __init__(self, sam_exec: str, template: Path):
+        self.exec = sam_exec
         self.template_path = template
         self.template = self._parse_sam_template()
         self.lambdas = self._get_aws_lambdas()
@@ -49,5 +50,9 @@ class Sam:  # pylint: disable=too-few-public-methods
         params.extend(def_params)
 
         return run(
-            ["sam", "build"] + params, text=True, encoding="utf-8", capture_output=True, check=False
+            [self.exec, "build"] + params,
+            text=True,
+            encoding="utf-8",
+            capture_output=True,
+            check=False,
         )
