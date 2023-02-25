@@ -1,3 +1,9 @@
+## 1.0.1 (2023-02-25)
+
+### Fix
+
+- create requirements.txt parent dir before writing into
+
 ## 1.0.0 (2023-02-23)
 
 ### Refactor
