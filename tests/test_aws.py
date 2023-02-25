@@ -4,7 +4,7 @@ from hatch_aws.aws import Sam
 
 
 def test_sam_init(asset):
-    sam = Sam(template=asset("sam-template.yml"))
+    sam = Sam(sam_exec="sam", template=asset("sam-template.yml"))
 
     lambda1, lambda2, lambda3, *other = sam.lambdas
 
@@ -22,4 +22,4 @@ def test_sam_init(asset):
 
 def test_unsupported_template(asset):
     with pytest.raises(AttributeError):
-        Sam(template=asset("sam-template-unsupported-handler.yml"))
+        Sam(sam_exec="sam", template=asset("sam-template-unsupported-handler.yml"))
