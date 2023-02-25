@@ -31,8 +31,8 @@ test = ["coverage", "pytest", "pytest-cov", "pytest-mock", "tomli_w"]
 aws = "hatch_aws.hooks"
 
 [tool.hatch.build]
-exclude = [".github", "tests", ".editorconfig"]
 sources = ["src"]
+only-packages = true
 
 [project.urls]
 Documentation = "https://github.com/aka-raccoon/hatch-aws#readme"
@@ -55,19 +55,22 @@ features = ["dev", "test"]
 
 [tool.hatch.envs.default.scripts]
 check = [
-  "pylint src/",
-  "black --check --diff src/",
-  "isort --check-only --diff src/",
-  "mypy --install-types --non-interactive src/",
-  "bandit -r --configfile pyproject.toml src/",
+  "pylint $SRC",
+  "black --check --diff $SRC",
+  "isort --check-only --diff $SRC",
+  "mypy $SRC",
+  "bandit -r --configfile pyproject.toml $SRC",
 ]
-format = ["black src/", "isort src/"]
+fix = ["black $SRC", "isort $SRC"]
+
+[tool.hatch.envs.default.env-vars]
+SRC = "src/"
 
 [tool.hatch.envs.test]
 features = ["test"]
 
 [tool.hatch.envs.test.scripts]
-unit = "pytest --cov"
+unit = "pytest --cov {args}"
 
 [[tool.hatch.envs.test.matrix]]
 python = ["3.8", "3.9"]
