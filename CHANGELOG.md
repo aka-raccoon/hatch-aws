@@ -1,3 +1,9 @@
+## 1.1.0 (2023-02-25)
+
+### Feat
+
+- add option to set custom path to sam cli
+
 ## 1.0.1 (2023-02-25)
 
 ### Fix
